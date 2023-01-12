@@ -1,4 +1,4 @@
-import { Component } from 'react';
+import { useEffect, useState } from 'react';
 import { ToastContainer } from 'react-toastify';
 import { toast } from 'react-toastify';
 import { GlobalStyle } from '../../GlobalStyles';
@@ -9,40 +9,40 @@ import { fetchImages } from '../../api';
 import { AppWrap } from './App.styled';
 import { Loader } from 'components/Loader/Loader';
 
-export class App extends Component {
-  state = {
-    querry: '',
-    images: [],
-    loading: false,
-    page: 1,
-    total: 0,
-  };
+export const App = () => {
+  const [query, setQuery] = useState('');
+  const [images, setImages] = useState([]);
+  const [loading, setLoading] = useState(false);
+  const [page, setPage] = useState(1);
+  const [total, setTotal] = useState(0);
 
-  handleSubmit = querry => {
-    this.setState({ querry, page: 1 });
-    if (querry !== this.state.querry || this.state.page > 1) {
-      this.setState({ images: [] });
+  const handleSubmit = searchQuery => {
+    setQuery(searchQuery);
+    setPage(1);
+    if (searchQuery !== query || page > 1) {
+      setImages([]);
     }
   };
 
-  loadMore = () => {
-    this.setState(prevState => ({
-      page: prevState.page + 1,
-    }));
+  const loadMore = () => {
+    setPage(prevState => prevState + 1);
   };
 
-  async componentDidUpdate(_, prevState) {
-    if (
-      prevState.querry !== this.state.querry ||
-      prevState.page !== this.state.page
-    ) {
+  useEffect(() => {
+    if (query === '') {
+      return;
+    }
+
+    const controller = new AbortController();
+
+    const fetch = async function () {
       try {
-        this.setState({ loading: true });
-        const data = await fetchImages(this.state.querry, this.state.page);
+        setLoading(true);
+        const data = await fetchImages(query, page, controller);
 
         if (data.hits.length < 1) {
           toast.warning(
-            `${this.state.querry} is not defined! Please, enter other value and try again!`
+            `${query} is not defined! Please, enter other value and try again!`
           );
         }
 
@@ -57,41 +57,44 @@ export class App extends Component {
           }
         );
 
-        this.setState({
-          images: [...this.state.images, ...images],
-          total: data.totalHits,
-        });
+        setImages(prevState => [...prevState, ...images]);
+        setTotal(data.totalHits);
       } catch (error) {
         toast.error('Something went wrong. Please, try again!');
       } finally {
-        this.setState({ loading: false });
+        setLoading(false);
       }
-    }
-  }
+    };
 
-  render() {
-    const { loading, images, total } = this.state;
-    return (
-      <AppWrap>
-        <SearchBar onSubmit={this.handleSubmit} />
-        {images.length > 0 && <ImageGallery images={images} />}
-        {loading && <Loader />}
-        {total > 12 && !loading && <Button onLoadMore={this.loadMore} />}
+    fetch();
 
-        <ToastContainer
-          position="top-center"
-          autoClose={5000}
-          hideProgressBar={false}
-          newestOnTop={false}
-          closeOnClick
-          rtl={false}
-          pauseOnFocusLoss
-          draggable
-          pauseOnHover
-          theme="light"
-        />
-        <GlobalStyle />
-      </AppWrap>
-    );
-  }
-}
+    return () => {
+      controller.abort();
+    };
+  }, [query, page]);
+
+  return (
+    <AppWrap>
+      <SearchBar onSubmit={handleSubmit} />
+      {images.length > 0 && <ImageGallery images={images} />}
+      {loading && <Loader />}
+      {page < Math.ceil(total / 12) && !loading && (
+        <Button onLoadMore={loadMore} />
+      )}
+
+      <ToastContainer
+        position="top-center"
+        autoClose={5000}
+        hideProgressBar={false}
+        newestOnTop={false}
+        closeOnClick
+        rtl={false}
+        pauseOnFocusLoss
+        draggable
+        pauseOnHover
+        theme="light"
+      />
+      <GlobalStyle />
+    </AppWrap>
+  );
+};

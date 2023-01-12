@@ -1,43 +1,44 @@
-import { Component } from 'react';
+import { useState } from 'react';
 import PropTypes from 'prop-types';
 import { ImageModal } from 'components/Modal/Modal';
 import { GalleryItem, Img } from './ImageGalleryItem.styled';
 
-export class ImageGalleryItem extends Component {
-  static propTypes = {
-    smallPic: PropTypes.string.isRequired,
-    bigPic: PropTypes.string.isRequired,
-    tags: PropTypes.string.isRequired,
+export const ImageGalleryItem = ({ smallPic, tags, bigPic }) => {
+  const [isOpenModal, setIsOpenModal] = useState(false);
+
+  const toggleModal = () => {
+    setIsOpenModal(prevState => !prevState);
   };
 
-  state = {
-    isOpenModal: false,
-  };
+  // const openModal = () => {
+  //   setIsOpenModal(true);
+  //   console.log(isOpenModal);
+  // };
 
-  openModal = () => {
-    this.setState({ isOpenModal: true });
-  };
+  // const closeModal = () => {
+  //   setIsOpenModal(false);
+  //   console.log(isOpenModal);
+  // };
 
-  closeModal = () => {
-    this.setState({ isOpenModal: false });
-  };
+  return (
+    <>
+      <GalleryItem onClick={toggleModal}>
+        <Img src={smallPic} alt={tags} />
+      </GalleryItem>
+      {isOpenModal && (
+        <ImageModal
+          bigPic={bigPic}
+          tags={tags}
+          isOpen={isOpenModal}
+          onClose={toggleModal}
+        />
+      )}
+    </>
+  );
+};
 
-  render() {
-    const { smallPic, tags, bigPic } = this.props;
-    return (
-      <>
-        <GalleryItem onClick={this.openModal}>
-          <Img src={smallPic} alt={tags} />
-        </GalleryItem>
-        {this.state.isOpenModal && (
-          <ImageModal
-            bigPic={bigPic}
-            tags={tags}
-            isOpen={this.state.isOpenModal}
-            onClose={this.closeModal}
-          />
-        )}
-      </>
-    );
-  }
-}
+ImageGalleryItem.propTypes = {
+  smallPic: PropTypes.string.isRequired,
+  bigPic: PropTypes.string.isRequired,
+  tags: PropTypes.string.isRequired,
+};
